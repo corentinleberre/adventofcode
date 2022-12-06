@@ -2,75 +2,58 @@ package day5
 
 import (
 	"github.com/samber/lo"
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
 )
 
-func parseArrayOfContainers(lines []string) {
-	result := [][]string{
-		{"F", "D", "B", "Z", "T", "J", "R", "N"},
-		{"R", "S", "N", "J", "H"},
-		{"C", "R", "N", "J", "G", "Z", "F", "Q"},
-		{"F", "V", "N", "G", "R", "T", "Q"},
-		{"L", "T", "Q", "F"},
-		{"Q", "C", "W", "Z", "B", "R", "G", "N"},
-		{"F", "C", "L", "S", "N", "H", "M"},
-		{"D", "N", "Q", "M", "T", "J"},
-		{"P", "G", "S"},
-	}
-
-	/*result := [][]string{
-		{"Z", "N"},
-		{"M", "C", "D"},
-		{"P"},
-	}*/
-
-	print(result)
-
-	instructions := lo.Map(lines, func(line string, _ int) []int {
-		return extractNumbers(line)
+func supplyStacks(cratesState [][]string, lines []string) string {
+	rearrangementProcedure := lo.Map(lines, func(line string, _ int) []int {
+		return convertCraneInstructions(line)
 	})
 
-	for _, instruction := range instructions {
+	for _, instruction := range rearrangementProcedure {
 		quantity := instruction[0]
 		from := instruction[1] - 1
 		to := instruction[2] - 1
 
-		tempArray := []string{}
+		movedCrateArray, leftCrateArray := crateMover9001Logic(cratesState, from, quantity)
 
-		for i := quantity - 1; i >= 0; i-- {
-			tempArray = append(tempArray, result[from][len(result[from])-1])
-			result[from] = result[from][:len(result[from])-1]
-		}
-
-		result[to] = append(result[to], tempArray...)
-
-		print(tempArray, to)
+		cratesState[to] = append(cratesState[to], movedCrateArray...)
+		cratesState[from] = leftCrateArray
 	}
 
-	finalState := []string{}
+	finalState := lo.Map(cratesState, func(crate []string, index int) string {
+		return crate[len(crate)-1]
+	})
 
-	for _, col := range result {
-		finalState = append(finalState, col[len(col)-1])
-	}
+	concatResult := lo.Reduce(finalState, func(agg string, item string, index int) string {
+		return agg + item
+	}, "")
 
-	print(finalState)
+	return concatResult
 }
 
-func extractNumbers(str string) []int {
+func crateMover9001Logic(cratesState [][]string, from int, quantity int) ([]string, []string) {
+	tempArray := lo.Subset(cratesState[from], -quantity, math.MaxUint)
+	restArray := lo.Subset(cratesState[from], 0, uint(len(cratesState[from])-quantity))
+	return tempArray, restArray
+}
+
+func convertCraneInstructions(str string) []int {
 	words := strings.Fields(str)
 	re := regexp.MustCompile("[0-9]+")
 
-	numbers := make([]int, 0)
+	instructions := make([]int, 0)
 
 	for _, word := range words {
 		numStr := re.FindString(word)
 		if numStr != "" {
 			num, _ := strconv.Atoi(numStr)
-			numbers = append(numbers, num)
+			instructions = append(instructions, num)
 		}
 	}
 
-	return numbers
+	return instructions
 }
